@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SQKT - Quản lý Đào tạo & NCKH</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Styled XLSX Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f1f5f9; 
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-full { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            body { background: white; }
+            .shadow-sm, .shadow-lg { shadow: none !important; }
+            .rounded-3xl, .rounded-2xl { border-radius: 0 !important; }
+        }
+        /* Tùy chỉnh thanh cuộn */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Responsive mobile adjustments */
+        html { scroll-behavior: smooth; }
+        *, *::before, *::after { box-sizing: border-box; }
+        input, select, textarea, button { font-family: inherit; }
+        .responsive-table th, .responsive-table td { white-space: normal; word-break: break-word; }
+        @media (max-width: 640px) {
+            body { font-size: 14px; }
+            header { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .mobile-condensed { gap: 0.75rem !important; }
+            .mobile-small-pad { padding: 1rem !important; }
+            .mobile-hidden-sm { display: none !important; }
+            .mobile-table-padding th, .mobile-table-padding td { padding: 0.75rem 0.8rem !important; }
+            .text-sm-responsive { font-size: 0.85rem !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useRef, useEffect } = React;
+
+        // --- DANH MỤC DỮ LIỆU NCKH ---
+        const ACTIVITY_DATA = [
+            {
+                category: "Đề tài nghiên cứu",
+                items: [
+                    { id: "dt_cs_truong", label: "Cấp Cơ sở (Hiệu trưởng phê duyệt)", points: 1200 },
+                    { id: "dt_cs_tongcuc", label: "Cấp Cơ sở (BTTM/TC phê duyệt)", points: 1800 },
+                    { id: "dt_bo", label: "Cấp Bộ", points: 2400 },
+                    { id: "dt_qg", label: "Cấp Quốc gia", points: 3600 },
+                ]
+            },
+            {
+                category: "Sáng kiến",
+                items: [
+                    { id: "sk_tu_tuc_xs", label: "Sáng kiến tự túc - Xuất sắc", points: 300 },
+                    { id: "sk_tu_tuc_kha", label: "Sáng kiến tự túc - Khá", points: 250 },
+                    { id: "sk_tu_tuc_dat", label: "Sáng kiến tự túc - Đạt", points: 200 },
+                    { id: "sk_cs_truong", label: "Sáng kiến cấp Cơ sở (Hiệu trưởng phê duyệt)", points: 300 },
+                    { id: "sk_cs_tongcuc", label: "Sáng kiến cấp Cơ sở (Tổng cục phê duyệt)", points: 450 },
+                    { id: "sk_bo", label: "Sáng kiến cấp Bộ", points: 600 },
+                    { id: "sk_qg", label: "Sáng kiến cấp Quốc gia", points: 900 },
+                ]
+            },
+            {
+                category: "Giáo trình & Tài liệu",
+                items: [
+                    { id: "gt_tl", label: "Giáo trình/Tài liệu dạy học/Điều lệnh", points: 1200 },
+                ]
+            },
+            {
+                category: "Bài báo khoa học",
+                items: [
+                    { id: "bb_issn", label: "Tạp chí có mã ISSN", points: 300 },
+                    { id: "bb_hdgsnn", label: "Tạp chí tính điểm HĐGSNN", points: 600 },
+                    { id: "bb_isi_q1", label: "ISI/Scopus - Xếp hạng Q1", points: 1200 },
+                    { id: "bb_isi_q23", label: "ISI/Scopus - Xếp hạng Q2, Q3", points: 1000 },
+                    { id: "bb_isi_q4", label: "ISI/Scopus - Xếp hạng Q4", points: 800 },
+                ]
+            },
+            {
+                category: "Báo cáo / Hội thảo",
+                items: [
+                    { id: "bc_khoa", label: "Báo cáo hội thảo cấp Khoa", points: 100 },
+                    { id: "bc_truong", label: "Báo cáo hội thảo cấp Trường", points: 200 },
+                    { id: "bc_cs_tc", label: "Báo cáo hội thảo cấp Cơ sở (TC)", points: 300 },
+                    { id: "bc_bo", label: "Báo cáo hội thảo cấp Bộ", points: 450 },
+                    { id: "bc_qg", label: "Báo cáo hội thảo cấp Quốc gia", points: 600 },
+                ]
+            },
+            {
+                category: "Hướng dẫn & Olympic",
+                items: [
+                    { id: "hd_cs_xs", label: "Hướng dẫn HV NCKH cấp Cơ sở - Xuất sắc", points: 75 },
+                    { id: "hd_cs_dat", label: "Hướng dẫn HV NCKH cấp Cơ sở - Đạt", points: 30 },
+                    { id: "ol_nhat", label: "Giải Nhất Olympic/Hội thi Toàn quân/Quốc", points: 300 },
+                    { id: "ol_nhi", label: "Giải Nhì Olympic/Hội thi Toàn quân/Quốc", points: 250 },
+                    { id: "ol_ba", label: "Giải Ba Olympic/Hội thi Toàn quân/Quốc", points: 200 },
+                ]
+            },
+            {
+                category: "Hội đồng & Tham dự",
+                items: [
+                    { id: "hd_cuong", label: "Hội đồng thông qua đề cương", points: 3 },
+                    { id: "hd_nghiemthu", label: "Hội đồng nghiệm thu sản phẩm", points: 6 },
+                    { id: "td_khoa", label: "Tham dự hội thảo cấp Khoa", points: 3 },
+                    { id: "td_truong", label: "Tham dự hội thảo cấp Trường", points: 4 },
+                ]
+            }
+        ];
+
+        const TEACHING_FORMS = [
+            { label: "Lý thuyết/Thực hành giảng đường ", coeff: 1.0 },
+            { label: "Lý thuyết/Thực hành tại xưởng", coeff: 1.2 },
+            { label: "Tiểu luận / Đồ án", coeff: 1.5 },
+            { label: "Hướng dẫn bài tập", coeff: 0.5 },
+        ];
+
+        const QUOTA_TABLE = [
+            { pos: 'Giảng viên', party: '', percent: 100, hours: 280 },
+            { pos: 'Trưởng bộ môn', party: '', percent: 80, hours: 224 },
+            { pos: 'Chủ nhiệm khoa', party: 'Không kiêm nhiệm', percent: 60, hours: 168 },
+            { pos: 'Chủ nhiệm khoa', party: 'Bí thư chi bộ', percent: 45, hours: 126 },
+            { pos: 'Chủ nhiệm khoa', party: 'Phó Bí thư chi bộ', percent: 50, hours: 140 },
+            { pos: 'Phó Chủ nhiệm khoa', party: 'Không kiêm nhiệm', percent: 70, hours: 196 },
+            { pos: 'Phó Chủ nhiệm khoa', party: 'Bí thư chi bộ', percent: 55, hours: 154 },
+            { pos: 'Phó Chủ nhiệm khoa', party: 'Phó Bí thư chi bộ', percent: 60, hours: 168 },
+        ];
+
+        // --- ICON COMPONENT (SVG-based) ---
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const icons = {
+                user: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+                'book-open': <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>,
+                microscope: <><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0-14 0"/><path d="M9 14h2"/><path d="M9 12a2 2 0 1 0-4 0"/><path d="M17 6V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16"/></>,
+                'clipboard-check': <><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></>,
+                plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+                'trash-2': <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
+                'edit-3': <><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
+                printer: <><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>,
+                'file-spreadsheet': <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></>,
+                upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
+                database: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
+                'sticky-note': <><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>,
+                'check-circle': <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+                'alert-circle': <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+                save: <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>,
+                x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+            };
+
+            return (
+                <svg 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {icons[name] || icons.user}
+                </svg>
+            );
+        };
+
+        // --- APP COMPONENT ---
+        function App() {
+            const fileInputRef = useRef(null);
+
+            // 1. Thông tin giảng viên
+            const [teacherInfo, setTeacherInfo] = useState({
+                name: '', department: '', faculty: '', position: 'Giảng viên', partyRole: ''
+            });
+
+            // 2. Giảng dạy
+            const [teachingEntries, setTeachingEntries] = useState([]);
+            const [teachingForm, setTeachingForm] = useState({
+                id: null, className: '',classNumber: '', term: '1', subject: '', tkbHours: '', form: 'Lý thuyết/thực hành tại giảng đường',examPapers: '', note: ''
+            });
+
+            // 3. Nghiên cứu khoa học
+            const [nckhEntries, setNckhEntries] = useState([]);
+            const [editingId, setEditingId] = useState(null);
+            const [nckhForm, setNckhForm] = useState({
+                id: null, taskName: '', itemId: '', quantity: 1, years: 1, members: 1, role: 'main', note: ''
+            });
+
+            // Logic Helpers
+            const formatNum = (n) => Math.round(Number(n) * 100) / 100;
+
+            const currentQuota = useMemo(() => {
+                // 1. Tìm chính xác theo cặp Position + Party
+                const exactMatch = QUOTA_TABLE.find(q => q.pos === teacherInfo.position && q.party === teacherInfo.partyRole);
+                if (exactMatch) return exactMatch;
+
+                // 2. Fallback: Nếu không khớp Party (thường xảy ra khi vừa đổi Position), lấy dòng đầu tiên của Position đó
+                const fallbackMatch = QUOTA_TABLE.find(q => q.pos === teacherInfo.position);
+                if (fallbackMatch) return fallbackMatch;
+
+                // 3. Mặc định cuối cùng
+                return { percent: 100, hours: 280 };
+            }, [teacherInfo.position, teacherInfo.partyRole]);
+
+            const calculateNCKHPersonal = (basePoints, quantity, years, members, role) => {
+                const total = (basePoints * Number(quantity)) / Number(years);
+                const m = Number(members);
+                if (m <= 1) return formatNum(total);
+                let share = 0;
+                if (m === 2) share = (role === "main") ? (2 / 3) * total : (1 / 3) * total;
+                else if (m === 3) share = (role === "main") ? (1 / 2) * total : (1 / 4) * total;
+                else share = (role === "main") ? (1 / 3 * total) + ((2 / 3 * total) / m) : (2 / 3 * total) / m;
+                return formatNum(share);
+            };
+
+            // Actions Giảng dạy
+            const saveTeaching = () => {
+                if (!teachingForm.className || !teachingForm.subject || !teachingForm.tkbHours) return;
+                const coeff = TEACHING_FORMS.find(f => f.label === teachingForm.form)?.coeff || 1;
+                const standard = formatNum(Number(teachingForm.tkbHours) * coeff);
+                
+                if (teachingForm.id) {
+                    setTeachingEntries(teachingEntries.map(e => e.id === teachingForm.id ? { ...teachingForm, standard } : e));
+                } else {
+                    setTeachingEntries([{ ...teachingForm, id: Date.now(), standard }, ...teachingEntries]);
+                }
+                cancelEditTeaching();
+            };
+
+            const handleEditTeaching = (entry) => {
+                setTeachingForm(entry);
+                document.getElementById('teaching-form-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+
+            const cancelEditTeaching = () => {
+                setTeachingForm({ id: null, className: '',classNumber: '', term: '1', subject: '', tkbHours: '', form: 'Lý thuyết/thực hành tại giảng đường',examPapers: '', note: '' });
+            };
+
+            const removeTeaching = (id) => {
+                if (confirm("Xóa hoạt động giảng dạy này?")) {
+                    setTeachingEntries(teachingEntries.filter(i => i.id !== id));
+                    if (teachingForm.id === id) cancelEditTeaching();
+                }
+            };
+
+            // Actions NCKH
+            const handleSaveEntry = () => {
+                const selected = ACTIVITY_DATA.flatMap(c => c.items).find(i => i.id === nckhForm.itemId);
+                if (!selected || !nckhForm.taskName) return;
+                const calculated = calculateNCKHPersonal(selected.points, nckhForm.quantity, nckhForm.years, nckhForm.members, nckhForm.role);
+                
+                const entry = { ...nckhForm, label: selected.label, calculated };
+                if (editingId) {
+                    setNckhEntries(nckhEntries.map(e => e.id === editingId ? { ...entry, id: editingId } : e));
+                    setEditingId(null);
+                } else {
+                    setNckhEntries([{ ...entry, id: Date.now() }, ...nckhEntries]);
+                }
+                cancelEdit();
+            };
+
+            const handleEdit = (entry) => {
+                setEditingId(entry.id);
+                setNckhForm(entry);
+                document.getElementById('nckh-form-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+
+            const cancelEdit = () => {
+                setEditingId(null);
+                setNckhForm({ id: null, taskName: '', itemId: '', quantity: 1, years: 1, members: 1, role: 'main', note: '' });
+            };
+
+            const removeEntry = (id) => {
+                if (confirm("Xóa nhiệm vụ NCKH này?")) {
+                    setNckhEntries(nckhEntries.filter(e => e.id !== id));
+                    if (editingId === id) cancelEdit();
+                }
+            };
+        const TOTAL_COLS = 10;
+
+        const emptyRow = Array(TOTAL_COLS).fill({ v: "" });
+            // Data Actions
+            const exportJSON = () => {
+                const data = { teacherInfo, teachingEntries, nckhEntries };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `HoSo_SQKT_2025_${teacherInfo.name || 'GiaoVien'}.json`;
+                a.click();
+            };
+
+            const importJSON = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const d = JSON.parse(evt.target.result);
+                        if (d.teacherInfo) setTeacherInfo(d.teacherInfo);
+                        if (d.teachingEntries) setTeachingEntries(d.teachingEntries || []);
+                        if (d.nckhEntries) setNckhEntries(d.nckhEntries || []);
+                    } catch (err) { alert("Lỗi định dạng file!"); }
+                };
+                reader.readAsText(file);
+            };
+            const handleExportExcel = () => {
+                const XLSX = window.XLSX;
+                if (!XLSX) return alert("Thư viện định dạng Excel chưa sẵn sàng. Thử lại sau 2 giây!");
+
+                const now = new Date();
+                const dateStr = `Thành phố Hồ Chí Minh, ngày ${String(now.getDate()).padStart(2, '0')} tháng ${String(now.getMonth() + 1).padStart(2, '0')} năm ${now.getFullYear()}`;
+                const FONT_NAME = "Times New Roman";
+                const QUOTA_NCKH = 600;
+
+                // Styles
+                const styleHeader = { font: { name: FONT_NAME, bold: false, size: 14 }, alignment: { horizontal: "center", vertical: "center" } };
+                const styleTitle = { font: { name: FONT_NAME, bold: true, size: 14 }, alignment: { horizontal: "center", vertical: "center" } };
+                const styleTableHead = { font: { name: FONT_NAME, bold: true }, alignment: { horizontal: "center", vertical: "center" }, border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }, fill: { fgColor: { rgb: "E9ECEF" } } };
+                const styleCell = { font: { name: FONT_NAME }, border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }, alignment: { vertical: "center", wrapText: true } };
+                const styleBoldCell = { font: { name: FONT_NAME, bold: true }, border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }, alignment: { vertical: "center", wrapText: true  } };
+
+                const wb = XLSX.utils.book_new();
+                
+                const teachingStandardSum = formatNum(teachingEntries.reduce((a,b)=>a+Number(b.standard),0));
+                const teachingDiff = formatNum(teachingStandardSum - currentQuota.hours);
+                const createMergedRow = (label, value, color) => {
+                const baseStyle = {
+                    ...styleBoldCell,
+                    alignment: { horizontal: "left" }
+                };
+
+                return [
+                    { v: label, s: { ...baseStyle, font: { ...baseStyle.font, color: { rgb: color || "000000" } } } },
+                    ...Array(7).fill({ v: "", s: styleBoldCell }),
+                    { v: value, s: { ...styleBoldCell, alignment: { horizontal: "right" } } },
+                    { v: "", s: styleBoldCell }
+                ];
+                };
+
+                const data = [
+                    [{ v: "TRƯỜNG SQKTQS", s: styleHeader }, "", "", "", "", { v: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", s: styleTitle }],
+                    [{ v: teacherInfo.faculty?.toUpperCase() || "KHOA ...", s: styleTitle }, "", "", "", "", { v: "Độc lập - Tự do - Hạnh phúc", s: { font: { name: FONT_NAME, bold: true, underline: true }, alignment: { horizontal: "center" } } }],
+                    ["", "", "", "", "", { v: dateStr, s: { font: { name: FONT_NAME, italic: true }, alignment: { horizontal: "center" } } }],
+                    [""],
+                    [{ v: "BÁO CÁO KẾT QUẢ GIẢNG DẠY & NGHIÊN CỨU KHOA HỌC", s: styleTitle }],
+                    [""],
+                    [{ v: "THÔNG TIN GIẢNG VIÊN", s: { font: { name: FONT_NAME, bold: true } } }],
+                    [{ v: `Họ và tên: ${teacherInfo.name || ""}`, s: { font: { name: FONT_NAME } } }],
+                    [{ v: `Bộ môn: ${teacherInfo.department || ""}`, s: { font: { name: FONT_NAME } } }],
+                    [{ v: `Chức vụ: ${teacherInfo.position || ""}`, s: { font: { name: FONT_NAME } } }],
+                    [""],
+                    [{ v: "I. DANH SÁCH CHI TIẾT GIẢNG DẠY", s: { font: { name: FONT_NAME, bold: true } } }],
+                    [
+                        { v: "STT", s: styleTableHead },
+                        { v: "Học phần", s: styleTableHead },
+                        { v: "Lớp", s: styleTableHead },
+                        { v: "Quân số", s: styleTableHead },
+                        { v: "Học kỳ", s: styleTableHead },
+                        { v: "Tiết TKB", s: styleTableHead },
+                        { v: "Hình thức", s: styleTableHead },
+                        { v: "Số đề/bài thi", s: styleTableHead },
+                        { v: "Giờ chuẩn", s: styleTableHead },
+                        { v: "Ghi chú", s: styleTableHead },
+
+                    ]
+                ];
+
+                // Append Teaching Data
+                teachingEntries.forEach((e, i) => {
+                    data.push([
+                        { v: i + 1, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.subject, s: styleCell },
+                        { v: e.className, s: styleCell },
+                        { v: e.classNumber, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.term, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.tkbHours, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.form, s: styleCell },
+                        { v: e.examPapers, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: formatNum(e.standard), s: { ...styleBoldCell, alignment: { horizontal: "right", vertical: "center" }} },
+                        { v: e.note || "", s: styleCell },
+                    ]);
+                });
+
+                    data.push(
+                    createMergedRow("TỔNG GIỜ GIẢNG DẠY", teachingStandardSum),
+                    createMergedRow("ĐỊNH MỨC GIẢNG DẠY", formatNum(currentQuota.hours)),
+                    createMergedRow(
+                        teachingDiff >= 0 ? "VƯỢT ĐỊNH MỨC GIẢNG DẠY" : "CÒN THIẾU GIỜ GIẢNG DẠY",
+                        Math.abs(teachingDiff),
+                        teachingDiff >= 0 ? "059669" : "DC2626"
+                    ),
+
+                    // ✅ dòng trống đúng chuẩn
+                    emptyRow,
+
+                    // ✅ TITLE full 10 cột
+                    [
+                        { v: "II. DANH SÁCH CHI TIẾT NHIỆM VỤ NCKH", s: styleBoldCell },
+                        ...Array(TOTAL_COLS - 1).fill({ v: "", s: styleBoldCell })
+                    ],
+
+                    // HEADER giữ nguyên
+                    [
+                        { v: "STT", s: styleTableHead },
+                        { v: "Tên nhiệm vụ / Hoạt động", s: styleTableHead },
+                        { v: "Loại hình quy định", s: styleTableHead },
+                        { v: "Giờ tổng", s: styleTableHead },
+                        { v: "Số lượng", s: styleTableHead },
+                        { v: "Số năm TH", s: styleTableHead },
+                        { v: "Tổng TV", s: styleTableHead },
+                        { v: "Vai trò", s: styleTableHead },
+                        { v: "Giờ cá nhân", s: styleTableHead },
+                        { v: "Ghi chú", s: styleTableHead }
+                    ]
+                    );
+
+                nckhEntries.forEach((e, i) => {
+                    const activityItem = ACTIVITY_DATA.flatMap(cat => cat.items).find(item => item.id === e.itemId);
+                    data.push([
+                        { v: i + 1, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.taskName, s: styleCell },
+                        { v: e.label, s: styleCell },
+                        { v: activityItem ? activityItem.points : 0, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: e.quantity, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: e.years, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: e.members, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: e.role === "main" ? "Chủ nhiệm/Chính" : "Thành viên", s: styleCell },
+                        { v: formatNum(e.calculated), s: { ...styleBoldCell, alignment: { horizontal: "right", vertical: "center" } } },
+                        { v: e.note || "", s: styleCell }
+                    ]);
+                });
+
+                const nckhSum = formatNum(totalNCKH);
+                const nckhDiff = formatNum(nckhSum - QUOTA_NCKH);
+                data.push(
+                createMergedRow("TỔNG GIỜ NCKH", nckhSum),
+                createMergedRow("ĐỊNH MỨC NCKH", formatNum(QUOTA_NCKH)),
+                createMergedRow(
+                    nckhDiff >= 0 ? "VƯỢT ĐỊNH MỨC NCKH" : "CÒN THIẾU NCKH",
+                    Math.abs(nckhDiff),
+                    nckhDiff >= 0 ? "059669" : "DC2626"
+                )
+                );
+
+                const ws = XLSX.utils.aoa_to_sheet(data);
+
+                // Initial Merges
+                ws["!merges"] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, 
+                    { s: { r: 0, c: 5 }, e: { r: 0, c: 9 } }, 
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, 
+                    { s: { r: 1, c: 5 }, e: { r: 1, c: 9 } }, 
+                    { s: { r: 2, c: 5 }, e: { r: 2, c: 9 } }, 
+                    { s: { r: 4, c: 0 }, e: { r: 4, c: 9 } }, 
+                    { s: { r: 6, c: 0 }, e: { r: 6, c: 9 } }, 
+                    { s: { r: 7, c: 0 }, e: { r: 7, c: 9 } }, 
+                    { s: { r: 8, c: 0 }, e: { r: 8, c: 9 } }, 
+                    { s: { r: 9, c: 0 }, e: { r: 9, c: 9 } }, 
+                    { s: { r: 11, c: 0 }, e: { r: 11, c: 9 } } 
+                ];
+
+                // Dynamic merges for summary rows Teaching
+                const teachingEndRow = 13 + teachingEntries.length;
+                [0, 1, 2].forEach(i => {
+                    ws["!merges"].push({ s: { r: teachingEndRow + i, c: 0 }, e: { r: teachingEndRow + i, c: 7 } });
+                });
+                
+                const nckhStartRow = teachingEndRow + 4;
+                ws["!merges"].push({ s: { r: nckhStartRow, c: 0 }, e: { r: nckhStartRow, c: 9 } });
+
+                const nckhSummaryRowStart = nckhStartRow + 2 + nckhEntries.length;
+                [0, 1, 2].forEach(i => {
+                    ws["!merges"].push({ s: { r: nckhSummaryRowStart + i, c: 0 }, e: { r: nckhSummaryRowStart + i, c: 7 } });
+                });
+
+                ws["!cols"] = [
+                    { wch: 6 }, { wch: 45 }, { wch: 25 }, { wch: 10 }, { wch: 10 },
+                    { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 }
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, "GD&NCKH");
+                XLSX.writeFile(wb, `Bao_cao_GiangDay_NCKH_${teacherInfo.name.replace(/\s+/g, '_') || 'SQKT'}.xlsx`);
+            };
+
+            const totalTeaching = formatNum(teachingEntries.reduce((s, e) => s + (Number(e.standard) || 0), 0));
+            const diffTeaching = formatNum(totalTeaching - currentQuota.hours);
+
+            const totalNCKH = formatNum(nckhEntries.reduce((s, e) => s + (Number(e.calculated) || 0), 0));
+            const progressNCKH = Math.min((totalNCKH / 600) * 100, 100);
+            const remainingNCKH = formatNum(Math.max(0, 600 - totalNCKH));
+            const labelClass = "text-sm font-medium text-gray-700 ml-1";
+            const inputClass = "w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-indigo-500 outline-none transition-all";
+            const selectClass = "w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none";
+            const buttonBase =  "px-5 py-2.5 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 transition-all leading-none";            
+            const buttonSecondary =  "bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95";
+            const buttonPrimary =  "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg active:scale-95";            
+            const buttonDisabled =  "bg-slate-300 text-white cursor-not-allowed";
+            const buttonWarning =  "bg-amber-500 text-white shadow-lg hover:bg-amber-600 active:scale-95";
+            const buttonInfo =  "bg-indigo-50 text-indigo-600 hover:bg-indigo-100";
+            const isTeachingValid =
+                    teachingForm.subject &&
+                    teachingForm.className &&
+                    teachingForm.term &&
+                    teachingForm.tkbHours &&
+                    teachingForm.form;
+                    const isNckhValid = nckhForm.itemId && nckhForm.taskName;
+            const [openMenu, setOpenMenu] = useState(false);
+
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* HEADER */}
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 no-print shadow-sm">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between">
+
+                            {/* LEFT */}
+                            <div className="flex items-center gap-3">
+                            <img
+                                src="https://tdnu.edu.vn/_next/image?url=%2Fimages%2Flogo.png&w=256&q=75"
+                                alt="Logo"
+                                className="h-10 sm:h-14 w-auto shrink-0"
+                            />
+
+                            <div className="hidden sm:block">
+                                <h1 className="text-lg font-bold text-slate-600 uppercase">
+                                CÔNG CỤ TÍNH GIỜ GIẢNG & NCKH
+                                </h1>
+                                <p className="text-slate-500 text-sm italic mt-1">
+                                Quy định số 1316/QyĐ-SQKT
+                                </p>
+                            </div>
+                            </div>
+
+                            {/* MOBILE TITLE */}
+                            <div className="sm:hidden text-center flex-1">
+                            <h1 className="text-sm font-bold text-slate-600 uppercase">
+                                GIỜ GIẢNG & NCKH
+                            </h1>
+                            </div>
+
+                            {/* RIGHT */}
+                            <div className="relative flex items-center gap-2">
+
+                            {/* 👉 Desktop buttons */}
+                            <div className="hidden sm:flex items-center gap-2">
+
+                                <button
+                                onClick={() => fileInputRef.current.click()}
+                                className={`${buttonBase} ${buttonSecondary}`}
+                                >
+                                <Icon name="upload" size={14} />
+                                Nhập JSON
+                                </button>
+
+                                <button
+                                onClick={exportJSON}
+                                className={`${buttonBase} ${buttonInfo}`}
+                                >
+                                <Icon name="database" size={14} />
+                                Lưu JSON
+                                </button>
+
+                                <button
+                                onClick={handleExportExcel}
+                                className={`${buttonBase} ${buttonPrimary}`}
+                                >
+                                <Icon name="file-spreadsheet" size={14} />
+                                Xuất Excel
+                                </button>
+
+                            </div>
+
+                            {/* 👉 Mobile menu button */}
+                            <button
+                            onClick={() => setOpenMenu(!openMenu)}
+                            className="sm:hidden p-2 rounded-xl hover:bg-slate-100 transition-all flex items-center justify-center"
+                            >
+                            <span className="text-lg leading-none">⋮</span>
+                            </button>
+
+                            {/* 👉 Dropdown menu */}
+                            {openMenu && (
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+
+                                <button
+                                    onClick={() => {
+                                    fileInputRef.current.click();
+                                    setOpenMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-slate-50"
+                                >
+                                    <Icon name="upload" size={14} />
+                                    Nhập JSON
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                    exportJSON();
+                                    setOpenMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-slate-50"
+                                >
+                                    <Icon name="database" size={14} />
+                                    Lưu JSON
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                    handleExportExcel();
+                                    setOpenMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-slate-50"
+                                >
+                                    <Icon name="file-spreadsheet" size={14} />
+                                    Xuất Excel
+                                </button>
+
+                                </div>
+                            )}
+
+                            {/* hidden input */}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".json"
+                                onChange={importJSON}
+                            />
+                            </div>
+
+                        </div>
+                    </header>
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 space-y-10">
+                        
+                        {/* SECTION 1: THÔNG TIN CÁ NHÂN */}
+                        <section className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                            <div className="grid lg:grid-cols-12 gap-8">
+                                <div className="lg:col-span-8 space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Icon name="user" size={16} className="text-indigo-600" />
+                                        <h2 className="text-sm font-black uppercase text-slate-700 tracking-wider">Thông tin cá nhân</h2>
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-4">
+  
+                                        <div className="space-y-1.5">
+                                            <label className={labelClass}>Họ và tên</label>
+                                            <input
+                                            className={inputClass}
+                                            value={teacherInfo.name}
+                                            onChange={e => setTeacherInfo({ ...teacherInfo, name: e.target.value })}
+                                            placeholder="Nguyễn Văn A..."
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className={labelClass}>Bộ môn</label>
+                                            <input
+                                            className={inputClass}
+                                            value={teacherInfo.department}
+                                            onChange={e => setTeacherInfo({ ...teacherInfo, department: e.target.value })}
+                                            placeholder="Nguyên lý Động cơ - Điện"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className={labelClass}>Khoa / Đơn vị</label>
+                                            <input
+                                            className={inputClass}
+                                            value={teacherInfo.faculty}
+                                            onChange={e => setTeacherInfo({ ...teacherInfo, faculty: e.target.value })}
+                                            placeholder="Khoa Ô tô"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            
+                                            <div className="space-y-1.5">
+                                            <label className={labelClass}>Chức vụ</label>
+                                            <select
+                                                className={selectClass}
+                                                value={teacherInfo.position}
+                                                onChange={e => setTeacherInfo({ ...teacherInfo, position: e.target.value })}
+                                            >
+                                                {Array.from(new Set(QUOTA_TABLE.map(q => q.pos))).map(p => (
+                                                <option key={p}>{p}</option>
+                                                ))}
+                                            </select>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                            <label className={labelClass}>Chức vụ Đảng</label>
+                                            <select
+                                                className={selectClass}
+                                                value={teacherInfo.partyRole}
+                                                onChange={e => setTeacherInfo({ ...teacherInfo, partyRole: e.target.value })}
+                                            >
+                                                {QUOTA_TABLE
+                                                .filter(q => q.pos === teacherInfo.position)
+                                                .map(q => (
+                                                    <option key={q.party}>{q.party}</option>
+                                                ))}
+                                            </select>
+                                            </div>
+
+                                        </div>
+
+                                        </div>
+                                </div>
+                                <div className="lg:col-span-4 bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[12px] font-black text-amber-600 uppercase tracking-widest mb-1">Định mức giảng dạy</p>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl font-black text-amber-800">{currentQuota.hours}</span>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">giờ / năm</span>
+                                        </div>
+                                        <p className="text-[12px] font-bold text-slate-400 mt-2 italic">* Tương ứng {currentQuota.percent}% của 280 giờ chuẩn</p>
+                                        <div className="h-4" />
+                                        <p className="text-[12px] font-black text-blue-600 uppercase tracking-widest mb-1">Định mức NCKH</p>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-4xl font-black text-blue-800">600</span>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">giờ / năm</span>
+                                        </div>
+                                        <p className="text-[12px] font-bold text-slate-400 mt-2 italic">* 600 giờ hành chính</p>
+                                    </div>
+                                   
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* SECTION 2: GIẢNG DẠY */}
+                        <div className="grid lg:grid-cols-12 gap-8">
+                            <section id="teaching-form-section" className="lg:col-span-4 no-print space-y-6">
+                                <div className={`bg-white rounded-3xl border p-7 shadow-sm transition-all ${teachingForm.id ? 'border-amber-400 bg-amber-50/10' : 'border-slate-200'}`}>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Icon name={teachingForm.id ? 'edit-3' : 'book-open'} size={18} className={teachingForm.id ? 'text-amber-500' : 'text-emerald-600'} />
+                                        <h2 className="text-sm font-black uppercase text-slate-700 tracking-wider">
+                                            {teachingForm.id ? 'Sửa Hoạt động giảng dạy' : 'Thêm Hoạt động giảng dạy'}
+                                        </h2>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="space-y-1.5">
+                                            <input
+                                                className={inputClass}
+                                                value={teachingForm.subject}
+                                                onChange={e => setTeachingForm({ ...teachingForm, subject: e.target.value })}
+                                                placeholder="Tên học phần"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                                <label className={labelClass}>Hình thức</label>
+                                                <select
+                                                className={selectClass}
+                                                value={teachingForm.form}
+                                                onChange={e => setTeachingForm({ ...teachingForm, form: e.target.value })}
+                                                >
+                                                {TEACHING_FORMS.map(f => (
+                                                    <option key={f.label} value={f.label}>
+                                                    {f.label} (x{f.coeff})
+                                                    </option>
+                                                ))}
+                                                </select>
+                                            </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                             <div className="space-y-1.5">
+                                                <label className={labelClass}>Lớp</label>
+                                                <input
+                                                className={inputClass}
+                                                value={teachingForm.className}
+                                                onChange={e => setTeachingForm({ ...teachingForm, className: e.target.value })}
+                                                placeholder="DQS09021..."
+                                                />
+                                            </div>
+
+                                             <div className="space-y-1.5">
+                                                <label className={labelClass}>Quân số</label>
+                                                <input
+                                                type="number"
+                                                min="1"
+                                                className={inputClass}
+                                                value={teachingForm.classNumber}
+                                                onChange={e =>
+                                                    setTeachingForm({
+                                                    ...teachingForm,
+                                                    classNumber: parseInt(e.target.value) || ""
+                                                    })
+                                                }
+                                                placeholder="20..."
+                                                />
+                                            </div>
+
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className={labelClass}>Học kỳ</label>
+                                                <select
+                                                className={selectClass}
+                                                value={teachingForm.term}
+                                                onChange={e => setTeachingForm({ ...teachingForm, term: e.target.value })}
+                                                >
+                                                <option value="1">HK 1</option>
+                                                <option value="2">HK 2</option>
+                                                <option value="Hè">Học hè</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className={labelClass}>Tiết TKB</label>
+                                                <input
+                                                type="number"
+                                                min="1"
+                                                step="1"
+                                                className={inputClass} 
+                                                value={teachingForm.tkbHours}
+                                                onChange={e => setTeachingForm({ ...teachingForm, tkbHours: e.target.value })}
+                                                />
+                                            </div>
+
+                                            
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <textarea
+                                                className={inputClass}
+                                                value={teachingForm.note}
+                                                onChange={e => setTeachingForm({ ...teachingForm, note: e.target.value })}
+                                                placeholder="Ghi chú"
+                                            />
+                                        </div>
+                                        
+                                        <div className="flex gap-2 pt-2">
+
+                                            {teachingForm.id && (
+                                                <button
+                                                onClick={cancelEditTeaching}
+                                                className={`flex-1 ${buttonBase} ${buttonSecondary}`}
+                                                >
+                                                <Icon name="x" size={14} />
+                                                Hủy
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={saveTeaching}
+                                                disabled={!isTeachingValid}
+                                                className={`flex-[2] ${buttonBase} ${
+                                                !isTeachingValid
+                                                    ? buttonDisabled
+                                                    : teachingForm.id
+                                                    ? buttonWarning
+                                                    : buttonPrimary
+                                                }`}
+                                            >
+                                                <Icon name={teachingForm.id ? "save" : "plus"} size={14} />
+                                                {teachingForm.id ? "Cập nhật" : "Thêm mới"}
+                                            </button>
+
+                                            </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="lg:col-span-8 space-y-6">
+                                <div className="grid md:grid-cols-2 gap-4 no-print">
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200 relative overflow-hidden">
+                                        <div className="text-[12px] font-black text-slate-400 uppercase mb-1">Tổng giờ giảng tích lũy</div>
+                                        <div className="text-4xl font-black text-emerald-600 tabular-nums">{totalTeaching.toFixed(2)} </div>
+                                        <div className="mt-4 flex justify-between text-[12px] font-bold text-slate-400 uppercase mb-1">
+                                            <span>Tiến độ giảng dạy</span>
+                                            <span>{Math.round((totalTeaching/currentQuota.hours)*100)}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-slate-100 rounded-full mt-1.5 overflow-hidden"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{width: `${Math.min((totalTeaching/currentQuota.hours)*100, 100)}%`}}></div></div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200 flex flex-col justify-center text-center">
+                                        {totalTeaching < currentQuota.hours ? (
+                                            <div>
+                                                <p className="text-[12px] font-black text-amber-500 uppercase flex items-center justify-center gap-1"><Icon name="alert-circle" size={14} /> Chưa đạt định mức</p>
+                                                <p className="text-4xl font-black text-amber-600 tabular-nums">{Math.abs(diffTeaching).toFixed(2)} </p>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div className="text-emerald-500 flex justify-center mb-1"><Icon name="check-circle" size={32} /></div>
+                                                <p className="text-xs font-black text-emerald-600 uppercase">Đã đạt định mức</p>
+                                                <p className="text-[12px] font-bold text-emerald-400 italic">Vượt: {Math.abs(diffTeaching).toFixed(2)} giờ</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                        <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">Danh sách giảng dạy</h3>
+                                    </div>
+                                    <div className="overflow-x-auto responsive-table mobile-table-padding">
+                                        <table className="min-w-full text-left">
+                                            <thead>
+                                                <tr className="text-[12px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                    <th className="px-6 py-4">Học phần/Lớp</th>
+                                                    <th className="px-6 py-4 text-center">Tiết TKB</th>
+                                                    <th className="px-6 py-4 text-right">Giờ chuẩn</th>
+                                                    <th className="px-6 py-4 text-right no-print">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {teachingEntries.length === 0 ? (
+                                                    <tr><td colSpan="4" className="px-6 py-20 text-center text-slate-300 italic font-medium">Chưa có hoạt động giảng dạy nào được ghi nhận...</td></tr>
+                                                ) : (
+                                                    teachingEntries.map(e => (
+                                                        <tr key={e.id} className={`hover:bg-slate-50/80 group transition-all ${teachingForm.id === e.id ? 'bg-amber-50/50' : ''}`}>
+                                                            <td className="px-6 py-4">
+                                                                <div className="font-bold text-slate-700 leading-tight">{e.subject}</div>
+                                                                <div className="text-[12px] text-slate-500 mt-0.5">HK{e.term} • {e.className} • QS {e.classNumber} . {e.form}</div>
+                                                                {e.note && <div className="text-[12px] text-indigo-500 italic mt-1.5 flex items-start gap-1"><Icon name="sticky-note" size={11} className="mt-0.5 shrink-0" />{e.note}</div>}
+                                                           
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center text-xs font-black text-slate-800 tabular-nums">{Number(e.tkbHours).toFixed(2)}</td>
+                                                            <td className="px-6 py-4 text-right text-lg font-black text-emerald-600 tabular-nums">{Number(e.standard).toFixed(2)}</td>
+                                                            <td className="px-6 py-4 text-right no-print">
+                                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                                    <button onClick={() => handleEditTeaching(e)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg"><Icon name="edit-3" size={16} /></button>
+                                                                    <button onClick={() => removeTeaching(e.id)} className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Icon name="trash-2" size={16} /></button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                            {teachingEntries.length > 0 && (
+                                                <tfoot className="bg-slate-50/50">
+                                                    <tr className="border-t border-slate-200">
+                                                        <td colSpan="2" className="px-6 py-3 text-[11px] font-black uppercase text-slate-500">Tổng giờ giảng dạy</td>
+                                                        <td className="px-6 py-3 text-right text-lg font-black text-slate-800 tabular-nums">{totalTeaching.toFixed(2)}</td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="2" className="px-6 py-3 text-[11px] font-black uppercase text-slate-500">Định mức giảng dạy</td>
+                                                        <td className="px-6 py-3 text-right text-lg font-black text-slate-800 tabular-nums">{formatNum(currentQuota.hours).toFixed(2)}</td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="2" className={`px-6 py-3 text-[11px] font-black uppercase ${diffTeaching >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                            {diffTeaching >= 0 ? 'Vượt định mức giảng dạy' : 'Còn thiếu giảng dạy'}
+                                                        </td>
+                                                        <td className={`px-6 py-3 text-right text-lg font-black tabular-nums ${diffTeaching >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                            {Math.abs(diffTeaching).toFixed(2)}
+                                                        </td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* SECTION 3: NGHIÊN CỨU KHOA HỌC */}
+                        <div className="grid lg:grid-cols-12 gap-8">
+                            <div className="lg:col-span-4 space-y-6 no-print">
+                                <section id="nckh-form-section" className={`bg-white p-6 rounded-2xl shadow-lg border-2 transition-all ${editingId ? 'border-amber-400 bg-amber-50/20' : 'border-transparent'}`}>
+                                    <h2 className="font-bold text-slate-700 uppercase mb-4 text-sm flex items-center gap-2">
+                                        <Icon name={editingId ? 'edit-3' : 'plus'} size={18} className={editingId ? 'text-amber-500' : 'text-emerald-600'} />
+                                        {editingId ? 'Sửa nhiệm vụ NCKH' : 'Thêm nhiệm vụ NCKH'}
+                                    </h2>
+                                    <div className="space-y-4">
+                                        {/* Tên nhiệm vụ */}
+                                        <input
+                                        className={inputClass}
+                                        placeholder="Tên đề tài/bài báo/sáng kiến..."
+                                        value={nckhForm.taskName}
+                                        onChange={e => setNckhForm({ ...nckhForm, taskName: e.target.value })}
+                                        />
+
+                                        {/* Phân loại */}
+                                        <select
+                                        className={selectClass}
+                                        value={nckhForm.itemId}
+                                        onChange={e => setNckhForm({ ...nckhForm, itemId: e.target.value })}
+                                        >
+                                        <option value="">-- Chọn phân loại --</option>
+                                        {ACTIVITY_DATA.map(cat => (
+                                            <optgroup key={cat.category} label={cat.category}>
+                                            {cat.items.map(i => (
+                                                <option key={i.id} value={i.id}>
+                                                {i.label}
+                                                </option>
+                                            ))}
+                                            </optgroup>
+                                        ))}
+                                        </select>
+
+                                        {/* Số lượng + Số năm */}
+                                        <div className="grid grid-cols-2 gap-3">
+
+                                        <div className="space-y-1.5">
+                                            <label className={labelClass}>Số lượng</label>
+                                            <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            className={inputClass}
+                                            value={nckhForm.quantity}
+                                            onChange={e =>
+                                                setNckhForm({
+                                                ...nckhForm,
+                                                quantity: parseFloat(e.target.value) || 1,
+                                                })
+                                            }
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className={labelClass}>Số năm TH</label>
+                                            <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            className={inputClass}
+                                            value={nckhForm.years}
+                                            onChange={e =>
+                                                setNckhForm({
+                                                ...nckhForm,
+                                                years: parseInt(e.target.value) || 1,
+                                                })
+                                            }
+                                            />
+                                        </div>
+
+                                        </div>
+
+                                        {/* Thành viên */}
+                                        <div className="space-y-1.5">
+                                        <label className={labelClass}>
+                                            Số thành viên: {nckhForm.members}
+                                        </label>
+
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(n => (
+                                            <button
+                                                key={n}
+                                                onClick={() =>
+                                                setNckhForm({
+                                                    ...nckhForm,
+                                                    members: n,
+                                                    role: n === 1 ? "main" : nckhForm.role,
+                                                })
+                                                }
+                                                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                                                nckhForm.members === n
+                                                    ? "bg-emerald-600 text-white shadow-md"
+                                                    : "bg-slate-100 text-slate-400"
+                                                }`}
+                                            >
+                                                {n === 5 ? "5+" : n}
+                                            </button>
+                                            ))}
+                                        </div>
+                                        </div>
+
+                                        {/* Vai trò */}
+                                        {nckhForm.members > 1 && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                            onClick={() =>
+                                                setNckhForm({ ...nckhForm, role: "main" })
+                                            }
+                                            className={`py-3 rounded-xl text-xs font-bold border-2 transition-all ${
+                                                nckhForm.role === "main"
+                                                ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                                                : "bg-white border-slate-200 text-slate-400"
+                                            }`}
+                                            >
+                                            Chủ nhiệm
+                                            </button>
+
+                                            <button
+                                            onClick={() =>
+                                                setNckhForm({ ...nckhForm, role: "member" })
+                                            }
+                                            className={`py-3 rounded-xl text-xs font-bold border-2 transition-all ${
+                                                nckhForm.role === "member"
+                                                ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                                                : "bg-white border-slate-200 text-slate-400"
+                                            }`}
+                                            >
+                                            Thành viên
+                                            </button>
+                                        </div>
+                                        )}
+
+                                        {/* Ghi chú */}
+                                        <textarea
+                                            className={inputClass}
+                                        placeholder="Ghi chú (Số minh chứng, ngày ký...)"
+                                        value={nckhForm.note}
+                                        onChange={e => setNckhForm({ ...nckhForm, note: e.target.value })}
+                                        />
+                                        <div className="flex gap-2">
+
+                                        {editingId && (
+                                            <button
+                                            onClick={cancelEdit}
+                                            className={`flex-1 ${buttonBase} ${buttonSecondary}`}
+                                            >
+                                            <Icon name="x" size={14} />
+                                            Hủy
+                                            </button>
+                                        )}
+
+                                        <button
+                                        onClick={handleSaveEntry}
+                                        disabled={!isNckhValid}
+                                        className={`flex-[2] ${buttonBase} ${
+                                            !isNckhValid
+                                            ? buttonDisabled
+                                            : editingId
+                                            ? buttonWarning
+                                            : buttonPrimary
+                                        }`}
+                                        >
+                                        <Icon name={editingId ? "save" : "plus"} size={14} />
+                                        {editingId ? "Cập nhật" : "Thêm mới"}
+                                        </button>
+
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div className="lg:col-span-8 space-y-6 print-full">
+                                <div className="grid md:grid-cols-2 gap-4 no-print">
+                                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden">
+                                        <div className="text-slate-400 text-[12px] font-black uppercase mb-1">Tổng giờ NCKH tích lũy</div>
+                                        <div className="text-5xl font-black text-emerald-600 tabular-nums">{totalNCKH.toFixed(2)}</div>
+                                        <div className="mt-4 flex justify-between text-[12px] font-bold text-slate-400 uppercase mb-1"><span>Tiến độ NCKH</span><span>{Math.round(progressNCKH)}%</span></div>
+                                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                                            <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{width:`${progressNCKH}%`}}></div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-center text-center">
+                                        {totalNCKH < 600 ? (
+                                            <div>
+                                                <div className="text-amber-500 text-[12px] font-black uppercase mb-1 flex items-center justify-center gap-1"><Icon name="alert-circle" size={14} /> NCKH còn thiếu</div>
+                                                <div className="text-5xl font-black text-amber-500 tabular-nums">{remainingNCKH.toFixed(2)}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="py-2">
+                                                <div className="text-emerald-600 flex justify-center mb-2"><Icon name="check-circle" size={36} /></div>
+                                                <div className="text-xl font-black text-emerald-700 uppercase">Đạt định mức NCKH</div>
+                                                <div className="text-xs font-bold text-emerald-600 mt-1">Vượt: {formatNum(totalNCKH - 600).toFixed(2)} giờ</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                        <h3 className="font-bold text-slate-800 uppercase text-sm tracking-wider">Danh sách chi tiết NCKH</h3>
+                                    </div>
+                                    <div className="overflow-x-auto responsive-table mobile-table-padding">
+                                        <table className="min-w-full text-left">
+                                            <thead>
+                                                <tr className="bg-slate-50/50 text-[12px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
+                                                    <th className="px-6 py-4">Nhiệm vụ & Ghi chú</th>
+                                                    <th className="px-6 py-4 text-center">Vai trò</th>
+                                                    <th className="px-6 py-4 text-right">Giờ cá nhân</th>
+                                                    <th className="px-6 py-4 text-right no-print">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {nckhEntries.length === 0 ? (
+                                                    <tr><td colSpan="4" className="px-6 py-20 text-center text-slate-300 italic font-medium">Chưa có nhiệm vụ nào được ghi nhận...</td></tr>
+                                                ) : (
+                                                    nckhEntries.map(e => (
+                                                        <tr key={e.id} className={`hover:bg-slate-50/80 transition-all group ${editingId === e.id ? 'bg-amber-50/50' : ''}`}>
+                                                            <td className="px-6 py-5">
+                                                                <div className="font-bold text-slate-700 leading-tight">{e.taskName}</div>
+                                                                <div className="text-[12px] text-slate-500 mt-0.5">{e.label} • {e.members} TV</div>
+                                                                {e.note && <div className="text-[12px] text-indigo-500 italic mt-1.5 flex items-start gap-1"><Icon name="sticky-note" size={11} className="mt-0.5 shrink-0" />{e.note}</div>}
+                                                            </td>
+                                                            <td className="px-6 py-5 text-center">
+                                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase border-2 tracking-tighter ${e.role==='main'?'bg-indigo-50 text-indigo-600 border-indigo-100':'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                                                    {e.role==='main'?'Chính':'TV'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-5 text-right font-black text-emerald-600 text-lg tabular-nums">
+                                                                {Number(e.calculated).toFixed(2)}
+                                                            </td>
+                                                            <td className="px-6 py-5 text-right no-print">
+                                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button onClick={() => handleEdit(e)} className="p-2 text-amber-500 hover:bg-amber-100/50 rounded-lg transition-all" title="Chỉnh sửa"><Icon name="edit-3" size={16} /></button>
+                                                                    <button onClick={() => removeEntry(e.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Xóa"><Icon name="trash-2" size={16} /></button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                            {nckhEntries.length > 0 && (
+                                                <tfoot className="bg-slate-50/50">
+                                                    <tr className="border-t border-slate-200">
+                                                        <td colSpan="2" className="px-6 py-3 text-[11px] font-black uppercase text-slate-500">Tổng giờ NCKH</td>
+                                                        <td className="px-6 py-3 text-right text-lg font-black text-slate-800 tabular-nums">{totalNCKH.toFixed(2)}</td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="2" className="px-6 py-3 text-[11px] font-black uppercase text-slate-500">Định mức NCKH</td>
+                                                        <td className="px-6 py-3 text-right text-lg font-black text-slate-800 tabular-nums">{formatNum(600).toFixed(2)}</td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="2" className={`px-6 py-3 text-[11px] font-black uppercase ${totalNCKH >= 600 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                            {totalNCKH >= 600 ? 'Vượt định mức NCKH' : 'Còn thiếu NCKH'}
+                                                        </td>
+                                                        <td className={`px-6 py-3 text-right text-lg font-black tabular-nums ${totalNCKH >= 600 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                            {Math.abs(totalNCKH - 600).toFixed(2)}
+                                                        </td>
+                                                        <td className="no-print"></td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                     </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
