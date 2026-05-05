@@ -645,10 +645,10 @@
 
                         </div>
                     </header>
-                    <main className="max-w-8xl mx-auto px-4 sm:px-6 mt-8 space-y-10">
+                    <main className="max-w-8xl mx-auto px-4 sm:px-6 mt-4 space-y-10">
                         
                         {/* SECTION 1: THÔNG TIN CÁ NHÂN */}
-                        <section className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                        <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
                             <div className="grid lg:grid-cols-12 gap-8">
                                 <div className="lg:col-span-8 space-y-6">
                                     <div className="flex items-center gap-3 mb-2">
@@ -745,7 +745,7 @@
                         {/* SECTION 2: GIẢNG DẠY */}
                         <div className="grid lg:grid-cols-12 gap-8">
                             <section id="teaching-form-section" className="lg:col-span-4 no-print space-y-6">
-                                <div className={`bg-white rounded-3xl border p-7 shadow-sm transition-all ${teachingForm.id ? 'border-amber-400 bg-amber-50/10' : 'border-slate-200'}`}>
+                                <div className={`bg-white rounded-3xl border p-6 shadow-sm transition-all ${teachingForm.id ? 'border-amber-400 bg-amber-50/10' : 'border-slate-200'}`}>
                                     <div className="flex items-center gap-3 mb-6">
                                         <Icon name={teachingForm.id ? 'edit-3' : 'book-open'} size={18} className={teachingForm.id ? 'text-amber-500' : 'text-emerald-600'} />
                                         <h2 className="text-sm font-black uppercase text-slate-700 tracking-wider">
@@ -877,7 +877,7 @@
                                 <div className="grid md:grid-cols-2 gap-4 no-print">
                                     <div className="bg-white p-6 rounded-3xl border border-slate-200 relative overflow-hidden">
                                         <div className="text-[12px] font-black text-slate-400 uppercase mb-1">Tổng giờ giảng tích lũy</div>
-                                        <div className="text-4xl font-black text-emerald-600 tabular-nums">{totalTeaching.toFixed(2)} </div>
+                                        <div className="text-3xl font-black text-emerald-600 tabular-nums">{totalTeaching.toFixed(2)} </div>
                                         <div className="mt-4 flex justify-between text-[12px] font-bold text-slate-400 uppercase mb-1">
                                             <span>Tiến độ giảng dạy</span>
                                             <span>{Math.round((totalTeaching/currentQuota.hours)*100)}%</span>
@@ -888,7 +888,7 @@
                                         {totalTeaching < currentQuota.hours ? (
                                             <div>
                                                 <p className="text-[12px] font-black text-amber-500 uppercase flex items-center justify-center gap-1"><Icon name="alert-circle" size={14} /> Chưa đạt định mức</p>
-                                                <p className="text-4xl font-black text-amber-600 tabular-nums">{Math.abs(diffTeaching).toFixed(2)} </p>
+                                                <p className="text-3xl font-black text-amber-600 tabular-nums">{Math.abs(diffTeaching).toFixed(2)} </p>
                                             </div>
                                         ) : (
                                             <div>
@@ -908,10 +908,10 @@
                                         <table className="min-w-full text-left">
                                             <thead>
                                                 <tr className="text-[12px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                                    <th className="px-6 py-4">Học phần/Lớp</th>
-                                                    <th className="px-6 py-4 text-center">Tiết TKB</th>
-                                                    <th className="px-6 py-4 text-right">Giờ chuẩn</th>
-                                                    <th className="px-6 py-4 text-right no-print">Thao tác</th>
+                                                    <th className="px-6 py-4 w-[60%]">Học phần/Lớp</th>
+                                                    <th className="px-6 py-4 text-center w-[15%]">Tiết TKB</th>
+                                                    <th className="px-6 py-4 text-right w-[15%]">Giờ chuẩn</th>
+                                                    <th className="px-6 py-4 text-right no-print w-[10%]"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -920,15 +920,15 @@
                                                 ) : (
                                                     teachingEntries.map(e => (
                                                         <tr key={e.id} className={`hover:bg-slate-50/80 group transition-all ${teachingForm.id === e.id ? 'bg-amber-50/50' : ''}`}>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 w-[60%]">
                                                                 <div className="font-bold text-slate-700 leading-tight">{e.subject}</div>
                                                                 <div className="text-[12px] text-slate-500 mt-0.5">HK{e.term} • {e.className} • QS {e.classNumber} . {e.form}</div>
                                                                 {e.note && <div className="text-[12px] text-indigo-500 italic mt-1.5 flex items-start gap-1"><Icon name="sticky-note" size={11} className="mt-0.5 shrink-0" />{e.note}</div>}
                                                            
                                                             </td>
-                                                            <td className="px-6 py-4 text-center text-xs font-black text-slate-800 tabular-nums">{Number(e.tkbHours).toFixed(2)}</td>
-                                                            <td className="px-6 py-4 text-right text-lg font-black text-emerald-600 tabular-nums">{Number(e.standard).toFixed(2)}</td>
-                                                            <td className="px-6 py-4 text-right no-print">
+                                                            <td className="px-6 py-4 text-center w-[15%] text-lg  text-slate-600 tabular-nums">{Number(e.tkbHours).toFixed(2)}</td>
+                                                            <td className="px-6 py-4 text-right w-[15%] text-lg  text-slate-600 tabular-nums">{Number(e.standard).toFixed(2)}</td>
+                                                            <td className="px-6 py-4 text-right no-print w-[10%]">
                                                                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                                                     <button onClick={() => handleEditTeaching(e)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg"><Icon name="edit-3" size={16} /></button>
                                                                     <button onClick={() => removeTeaching(e.id)} className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Icon name="trash-2" size={16} /></button>
@@ -1144,7 +1144,7 @@
                                 <div className="grid md:grid-cols-2 gap-4 no-print">
                                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden">
                                         <div className="text-slate-400 text-[12px] font-black uppercase mb-1">Tổng giờ NCKH tích lũy</div>
-                                        <div className="text-5xl font-black text-emerald-600 tabular-nums">{totalNCKH.toFixed(2)}</div>
+                                        <div className="text-3xl font-black text-emerald-600 tabular-nums">{totalNCKH.toFixed(2)}</div>
                                         <div className="mt-4 flex justify-between text-[12px] font-bold text-slate-400 uppercase mb-1"><span>Tiến độ NCKH</span><span>{Math.round(progressNCKH)}%</span></div>
                                         <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-50">
                                             <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{width:`${progressNCKH}%`}}></div>
@@ -1154,7 +1154,7 @@
                                         {totalNCKH < 600 ? (
                                             <div>
                                                 <div className="text-amber-500 text-[12px] font-black uppercase mb-1 flex items-center justify-center gap-1"><Icon name="alert-circle" size={14} /> NCKH còn thiếu</div>
-                                                <div className="text-5xl font-black text-amber-500 tabular-nums">{remainingNCKH.toFixed(2)}</div>
+                                                <div className="text-3xl font-black text-amber-500 tabular-nums">{remainingNCKH.toFixed(2)}</div>
                                             </div>
                                         ) : (
                                             <div className="py-2">
@@ -1174,10 +1174,10 @@
                                         <table className="min-w-full text-left">
                                             <thead>
                                                 <tr className="bg-slate-50/50 text-[12px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
-                                                    <th className="px-6 py-4 w-[55%]">Nhiệm vụ & Ghi chú</th>
+                                                    <th className="px-6 py-4 w-[60%]">Nhiệm vụ & Ghi chú</th>
                                                     <th className="px-6 py-4 text-center w-[15%] hidden sm:table-cell">Vai trò</th>
-                                                    <th className="px-6 py-4 text-right w-[15%]">Giờ cá nhân</th>
-                                                    <th className="px-6 py-4 text-right no-print w-[15%]">Thao tác</th>
+                                                    <th className="px-6 py-4 text-right w-[15%]">Giờ</th>
+                                                    <th className="px-6 py-4 text-right no-print w-[10%]"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -1186,7 +1186,7 @@
                                                 ) : (
                                                     nckhEntries.map(e => (
                                                         <tr key={e.id} className={`hover:bg-slate-50/80 transition-all group ${editingId === e.id ? 'bg-amber-50/50' : ''}`}>
-                                                            <td className="px-6 py-5 max-w-xs w-[55%]">
+                                                            <td className="px-6 py-5 max-w-xs w-[60%]">
                                                                 <div className="font-bold text-slate-700 leading-tight line-clamp-3">{e.taskName}</div>
                                                                 <div className="text-[12px] text-slate-500 mt-0.5">{e.label} • {e.members} Thành viên</div>
                                                                 {e.note && <div className="text-[12px] text-indigo-500 italic mt-1.5 flex items-start gap-1"><Icon name="sticky-note" size={11} className="mt-0.5 shrink-0" />{e.note}</div>}
@@ -1196,10 +1196,10 @@
                                                                     {e.role==='main'?'Chính':'TV'}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-5 text-right font-black text-emerald-600 text-lg tabular-nums w-[15%]">
+                                                            <td className="px-6 py-5 text-right text-slate-600 text-lg tabular-nums w-[15%]">
                                                                 {Number(e.calculated).toFixed(2)}
                                                             </td>
-                                                            <td className="px-6 py-5 text-right no-print w-[15%]">
+                                                            <td className="px-6 py-5 text-right no-print w-[10%]">
                                                                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                     <button onClick={() => handleEdit(e)} className="p-2 text-amber-500 hover:bg-amber-100/50 rounded-lg transition-all" title="Chỉnh sửa"><Icon name="edit-3" size={16} /></button>
                                                                     <button onClick={() => removeEntry(e.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Xóa"><Icon name="trash-2" size={16} /></button>
