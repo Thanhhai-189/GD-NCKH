@@ -873,7 +873,7 @@
                                 </div>
                             </section>
 
-                            <section className="lg:col-span-8 space-y-6">
+                            <div className="lg:col-span-8 space-y-6">
                                 <div className="grid md:grid-cols-2 gap-4 no-print">
                                     <div className="bg-white p-6 rounded-3xl border border-slate-200 relative overflow-hidden">
                                         <div className="text-[12px] font-black text-slate-400 uppercase mb-1">Tổng giờ giảng tích lũy</div>
@@ -900,12 +900,12 @@
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-hidden">
                                     <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                         <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">Danh sách giảng dạy</h3>
                                     </div>
                                     <div className="overflow-x-auto responsive-table mobile-table-padding">
-                                        <table className="min-w-full text-left">
+                                        <table className="min-w-max text-left">
                                             <thead>
                                                 <tr className="text-[12px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                                                     <th className="px-6 py-4 w-[60%]">Học phần/Lớp</th>
@@ -963,8 +963,9 @@
                                             )}
                                         </table>
                                     </div>
-                                </div>
-                            </section>
+                                </section>
+                            </div>
+                            
                         </div>
 
                         {/* SECTION 3: NGHIÊN CỨU KHOA HỌC */}
@@ -1166,12 +1167,12 @@
                                     </div>
                                 </div>
 
-                                <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-hidden">
                                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                                         <h3 className="font-bold text-slate-800 uppercase text-sm tracking-wider">Danh sách chi tiết NCKH</h3>
                                     </div>
                                     <div className="overflow-x-auto responsive-table mobile-table-padding">
-                                        <table className="min-w-full text-left">
+                                        <table className="min-w-max text-left">
                                             <thead>
                                                 <tr className="bg-slate-50/50 text-[12px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
                                                     <th className="px-6 py-4 w-[60%]">Nhiệm vụ & Ghi chú</th>
