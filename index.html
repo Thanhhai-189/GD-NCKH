@@ -391,7 +391,7 @@
                         { v: e.tkbHours, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
                         { v: e.form, s: styleCell },
                         { v: e.examPapers, s: { ...styleCell, alignment: { horizontal: "center" } } },
-                        { v: formatNum(e.standard), s: { ...styleBoldCell, alignment: { horizontal: "right", vertical: "center" }} },
+                        { v: formatNum(e.standard), s: { ...styleBoldCell, alignment: { horizontal: "center", vertical: "center" }} },
                         { v: e.note || "", s: styleCell },
                     ]);
                 });
@@ -435,12 +435,12 @@
                         { v: i + 1, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
                         { v: e.taskName, s: styleCell },
                         { v: e.label, s: styleCell },
-                        { v: activityItem ? activityItem.points : 0, s: { ...styleCell, alignment: { horizontal: "center" } } },
-                        { v: e.quantity, s: { ...styleCell, alignment: { horizontal: "center" } } },
-                        { v: e.years, s: { ...styleCell, alignment: { horizontal: "center" } } },
-                        { v: e.members, s: { ...styleCell, alignment: { horizontal: "center" } } },
+                        { v: activityItem ? activityItem.points : 0, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.quantity, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.years, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
+                        { v: e.members, s: { ...styleCell, alignment: { horizontal: "center", vertical: "center" } } },
                         { v: e.role === "main" ? "Chủ nhiệm/Chính" : "Thành viên", s: styleCell },
-                        { v: formatNum(e.calculated), s: { ...styleBoldCell, alignment: { horizontal: "right", vertical: "center" } } },
+                        { v: formatNum(e.calculated), s: { ...styleBoldCell, alignment: { horizontal: "center", vertical: "center" } } },
                         { v: e.note || "", s: styleCell }
                     ]);
                 });
@@ -489,8 +489,8 @@
                 });
 
                 ws["!cols"] = [
-                    { wch: 6 }, { wch: 45 }, { wch: 25 }, { wch: 10 }, { wch: 10 },
-                    { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 }
+                    { wch: 5 }, { wch: 45 }, { wch: 25 }, { wch: 10 }, { wch: 10 },
+                    { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 30 }
                 ];
 
                 XLSX.utils.book_append_sheet(wb, ws, "GD&NCKH");
@@ -645,7 +645,7 @@
 
                         </div>
                     </header>
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 space-y-10">
+                    <main className="max-w-8xl mx-auto px-4 sm:px-6 mt-8 space-y-10">
                         
                         {/* SECTION 1: THÔNG TIN CÁ NHÂN */}
                         <section className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
@@ -1174,10 +1174,10 @@
                                         <table className="min-w-full text-left">
                                             <thead>
                                                 <tr className="bg-slate-50/50 text-[12px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
-                                                    <th className="px-6 py-4">Nhiệm vụ & Ghi chú</th>
-                                                    <th className="px-6 py-4 text-center">Vai trò</th>
-                                                    <th className="px-6 py-4 text-right">Giờ cá nhân</th>
-                                                    <th className="px-6 py-4 text-right no-print">Thao tác</th>
+                                                    <th className="px-6 py-4 w-[55%]">Nhiệm vụ & Ghi chú</th>
+                                                    <th className="px-6 py-4 text-center w-[15%]">Vai trò</th>
+                                                    <th className="px-6 py-4 text-right w-[15%]">Giờ cá nhân</th>
+                                                    <th className="px-6 py-4 text-right no-print w-[15%]">Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -1186,20 +1186,20 @@
                                                 ) : (
                                                     nckhEntries.map(e => (
                                                         <tr key={e.id} className={`hover:bg-slate-50/80 transition-all group ${editingId === e.id ? 'bg-amber-50/50' : ''}`}>
-                                                            <td className="px-6 py-5 max-w-xs">
+                                                            <td className="px-6 py-5 max-w-xs w-[55%]">
                                                                 <div className="font-bold text-slate-700 leading-tight line-clamp-3">{e.taskName}</div>
                                                                 <div className="text-[12px] text-slate-500 mt-0.5">{e.label} • {e.members} TV</div>
                                                                 {e.note && <div className="text-[12px] text-indigo-500 italic mt-1.5 flex items-start gap-1"><Icon name="sticky-note" size={11} className="mt-0.5 shrink-0" />{e.note}</div>}
                                                             </td>
-                                                            <td className="px-6 py-5 text-center">
+                                                            <td className="px-6 py-5 text-center w-[15%]">
                                                                 <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase border-2 tracking-tighter ${e.role==='main'?'bg-indigo-50 text-indigo-600 border-indigo-100':'bg-slate-100 text-slate-500 border-slate-200'}`}>
                                                                     {e.role==='main'?'Chính':'TV'}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-5 text-right font-black text-emerald-600 text-lg tabular-nums">
+                                                            <td className="px-6 py-5 text-right font-black text-emerald-600 text-lg tabular-nums w-[15%]">
                                                                 {Number(e.calculated).toFixed(2)}
                                                             </td>
-                                                            <td className="px-6 py-5 text-right no-print">
+                                                            <td className="px-6 py-5 text-right no-print w-[15%]">
                                                                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                     <button onClick={() => handleEdit(e)} className="p-2 text-amber-500 hover:bg-amber-100/50 rounded-lg transition-all" title="Chỉnh sửa"><Icon name="edit-3" size={16} /></button>
                                                                     <button onClick={() => removeEntry(e.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Xóa"><Icon name="trash-2" size={16} /></button>
